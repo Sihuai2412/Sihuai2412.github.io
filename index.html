@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行星球宇宙网页版1.0.0</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .input-section {
+            flex: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .output-section {
+            flex: 2;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        label {
+            display: inline-block;
+            width: 180px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        input[type="number"], input[type="text"] {
+            width: 200px;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        button {
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        #reset-btn {
+            background-color: #f44336;
+        }
+        
+        #reset-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        #calc-recommend-btn {
+            background-color: #2196F3;
+        }
+        
+        #calc-recommend-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        #submit-btn {
+            background-color: #4CAF50;
+        }
+        
+        #submit-btn:hover {
+            background-color: #45a049;
+        }
+        
+        #stop-btn {
+            background-color: #ff9800;
+            display: none;
+        }
+        
+        #stop-btn:hover {
+            background-color: #f57c00;
+        }
+        
+        .warning {
+            color: red;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+        
+        #lifetime-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .range-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .info-note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .button-group {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .status-running {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-complete {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-stopped {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        #output-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        
+        #output-table th, #output-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        
+        #output-table th {
+            background-color: #4CAF50;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        #output-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        #output-table tr:hover {
+            background-color: #ddd;
+        }
+        
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        #simulation-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+        }
+        
+        .star-name-input {
+            width: 300px !important;
+        }
+        
+        .name-info {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h2>行星球宇宙网页版1.0.0</h2>
+    
+    <div class="container">
+        <div class="input-section">
+            <h3>输入参数</h3>
+            
+            <div class="input-group">
+                <label for="star-name">恒星名称:</label>
+                <input id="star-name" type="text" class="star-name-input" placeholder="例如: Sun_Simulation_001">
+                <div class="name-info">留空则使用默认命名: star_M{mass}_Z{metallicity}_t{endTime}</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="mass">恒星质量 (Msun):</label>
+                <input id="mass" type="number" max="30" min="0.8" step="0.2" value="1.0">
+                <div class="range-info">范围: 0.8 - 30 Msun</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="metallicity">金属度:</label>
+                <input id="metallicity" type="number" step="0.001" value="0.02">
+                <div id="metallicity-range" class="range-info">范围: 0.001 - 0.03</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="end-time">演化终点 (Myr):</label>
+                <input id="end-time" type="number" min="0" step="1">
+                <div id="end-time-warning" class="warning"></div>
+            </div>
+            
+            <div class="input-group">
+                <label for="step-size">演化步长 (Myr):</label>
+                <input id="step-size" type="number" min="0.001" step="0.001">
+                <div id="step-size-warning" class="warning"></div>
+                <div class="info-note">推荐步长：主序寿命的0.2%</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="refresh-time">间隔时间 (秒):</label>
+                <input id="refresh-time" type="number" min="0" step="0.1" value="1">
+                <div class="info-note">模拟输出间隔时间</div>
+            </div>
+            
+            <div class="button-group">
+                <button id="reset-btn">重置为标准参数</button>
+                <button id="calc-recommend-btn">自动填充推荐参数</button>
+                <button id="submit-btn">开始模拟</button>
+                <button id="stop-btn">停止模拟</button>
+            </div>
+            
+            <div id="status"></div>
+            
+            <div id="lifetime-info">
+                <strong>恒星寿命信息:</strong>
+                <div id="lifetime-details"></div>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <h3>模拟结果</h3>
+            
+            <div id="simulation-info">
+                <div id="simulation-header"></div>
+                <div id="simulation-stats"></div>
+            </div>
+            
+            <div class="table-container">
+                <table id="output-table">
+                    <thead>
+                        <tr>
+                            <th>年龄 (Myr)</th>
+                            <th>光度 (Lsun)</th>
+                            <th>半径 (Rsun)</th>
+                            <th>表面温度 (K)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="output-body">
+                        <!-- 结果将在这里动态添加 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="download-section" style="margin-top: 20px; display: none;">
+                <button id="download-btn">下载数据为文本文件</button>
+                <div id="file-info" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // DOM元素引用
+        const starNameInput = document.getElementById('star-name');
+        const massInput = document.getElementById('mass');
+        const metallicityInput = document.getElementById('metallicity');
+        const endTimeInput = document.getElementById('end-time');
+        const stepSizeInput = document.getElementById('step-size');
+        const refreshTimeInput = document.getElementById('refresh-time');
+        const resetBtn = document.getElementById('reset-btn');
+        const calcRecommendBtn = document.getElementById('calc-recommend-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const endTimeWarning = document.getElementById('end-time-warning');
+        const stepSizeWarning = document.getElementById('step-size-warning');
+        const lifetimeDetails = document.getElementById('lifetime-details');
+        const metallicityRange = document.getElementById('metallicity-range');
+        const statusDiv = document.getElementById('status');
+        const outputBody = document.getElementById('output-body');
+        const simulationHeader = document.getElementById('simulation-header');
+        const simulationStats = document.getElementById('simulation-stats');
+        const downloadSection = document.getElementById('download-section');
+        const downloadBtn = document.getElementById('download-btn');
+        const fileInfo = document.getElementById('file-info');
+        
+        // 标准参数配置
+        const STANDARD_PARAMS = {
+            starName: "",
+            mass: 1.0,
+            metallicity: 0.02,
+            endTime: 8000,
+            stepSize: 20,
+            refreshTime: 1
+        };
+        
+        // 模拟状态
+        let simulationRunning = false;
+        let simulationData = [];
+        let simulationStartTime;
+        let simulationTimer = null;
+        let currentStarName = "";
+        
+        // 格式化数字函数 - 避免科学计数法
+        function formatNumber(num, decimals = 10) {
+            if (isNaN(num) || !isFinite(num)) return '0';
+            
+            // 处理非常大或非常小的数字
+            if (Math.abs(num) < 1e-6 || Math.abs(num) >= 1e12) {
+                // 对于极端值，使用toFixed但确保不以科学计数法显示
+                let str = num.toFixed(decimals);
+                // 如果包含e，则转换
+                if (str.includes('e')) {
+                    // 手动转换科学计数法
+                    const [mantissa, exponent] = str.split('e');
+                    const exp = parseInt(exponent);
+                    if (exp >= 0) {
+                        // 正指数，移动小数点
+                        const [intPart, decPart = ''] = mantissa.split('.');
+                        const allDigits = intPart + decPart;
+                        const newPos = exp + intPart.length;
+                        const result = allDigits.padEnd(newPos, '0').split('');
+                        result.splice(newPos, 0, '.');
+                        return result.join('').replace(/\.$/, '').replace(/^0+/, '');
+                    } else {
+                        // 负指数，在前面加0
+                        const [intPart, decPart = ''] = mantissa.split('.');
+                        const allDigits = intPart + decPart;
+                        const zerosToAdd = Math.abs(exp) - intPart.length;
+                        return '0.' + '0'.repeat(Math.max(0, zerosToAdd)) + allDigits.replace(/^-/, '');
+                    }
+                }
+                return str;
+            }
+            
+            // 常规数字，直接使用toFixed
+            return num.toFixed(decimals);
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
+        
+        function initializePage() {
+            updateMetallicityRange(STANDARD_PARAMS.mass);
+            resetToStandardParams();
+        }
+        
+        // 恒星名称输入框验证
+        starNameInput.addEventListener('change', function() {
+            const value = this.value.trim();
+            // 检查文件名是否有效（不能包含特殊字符）
+            if (value) {
+                const invalidChars = /[<>:"/\\|?*]/;
+                if (invalidChars.test(value)) {
+                    alert('恒星名称不能包含以下字符: < > : " / \\ | ? *');
+                    this.value = '';
+                }
+            }
+        });
+        
+        // 质量输入框的验证
+        massInput.addEventListener('change', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                if (value < 0.8) {
+                    alert('质量不能小于0.8 Msun');
+                    this.value = 0.8;
+                } else if (value > 30) {
+                    alert('质量不能大于30 Msun');
+                    this.value = 30;
+                }
+                
+                updateMetallicityRange(value);
+                const metallicityValue = parseFloat(metallicityInput.value);
+                checkMetallicityRange(value, metallicityValue);
+                updateLifetimeInfo();
+            }
+        });
+        
+        // 金属度输入框的验证
+        metallicityInput.addEventListener('change', function() {
+            const metallicityValue = parseFloat(this.value);
+            const massValue = parseFloat(massInput.value);
+            checkMetallicityRange(massValue, metallicityValue);
+            updateLifetimeInfo();
+        });
+        
+        // 演化终点输入框的验证
+        endTimeInput.addEventListener('change', validateEndTime);
+        
+        // 演化步长输入框的验证
+        stepSizeInput.addEventListener('change', validateStepSize);
+        
+        // 间隔时间输入框的验证
+        refreshTimeInput.addEventListener('change', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value) && value < 0) {
+                alert('间隔时间不能为负数');
+                this.value = 1;
+            }
+        });
+        
+        // 自动填充推荐参数按钮
+        calcRecommendBtn.addEventListener('click', function() {
+            const massValue = parseFloat(massInput.value);
+            const metallicityValue = parseFloat(metallicityInput.value);
+            
+            if (isNaN(massValue) || isNaN(metallicityValue)) {
+                alert('请先输入质量和金属度');
+                return;
+            }
+            
+            if (!checkMetallicityRange(massValue, metallicityValue, true)) {
+                return;
+            }
+            
+            const lifetime = calculateLifetime(massValue, metallicityValue);
+            const eightyPercent = 0.8 * lifetime;
+            
+            endTimeInput.value = formatNumber(eightyPercent, 2);
+            const recommendedStep = lifetime * 0.002;
+            stepSizeInput.value = formatNumber(recommendedStep, 4);
+            
+            endTimeWarning.textContent = '';
+            stepSizeWarning.textContent = '';
+            updateLifetimeInfo();
+            
+            alert('已自动填充推荐参数：\n演化终点：' + formatNumber(eightyPercent, 2) + ' Myr (80%寿命)\n步长：' + formatNumber(recommendedStep, 4) + ' Myr (寿命的0.2%)');
+        });
+        
+        // 重置为标准参数按钮
+        resetBtn.addEventListener('click', function() {
+            // 如果模拟正在运行，先停止
+            if (simulationRunning) {
+                stopSimulation();
+            }
+            
+            starNameInput.value = STANDARD_PARAMS.starName;
+            massInput.value = STANDARD_PARAMS.mass;
+            metallicityInput.value = STANDARD_PARAMS.metallicity;
+            endTimeInput.value = STANDARD_PARAMS.endTime;
+            stepSizeInput.value = STANDARD_PARAMS.stepSize;
+            refreshTimeInput.value = STANDARD_PARAMS.refreshTime;
+            
+            updateMetallicityRange(STANDARD_PARAMS.mass);
+            endTimeWarning.textContent = '';
+            stepSizeWarning.textContent = '';
+            updateLifetimeInfo();
+            
+            alert('已重置为标准参数：\n1太阳质量，0.02金属度\n演化终点：8000 Myr\n步长：20 Myr\n间隔时间：1秒');
+        });
+        
+        // 提交按钮 - 开始模拟
+        submitBtn.addEventListener('click', function() {
+            if (simulationRunning) {
+                alert('模拟正在进行中，请等待完成或先停止当前模拟');
+                return;
+            }
+            
+            const starName = starNameInput.value.trim();
+            const massValue = parseFloat(massInput.value);
+            const metallicityValue = parseFloat(metallicityInput.value);
+            const endTimeValue = parseFloat(endTimeInput.value);
+            const stepSizeValue = parseFloat(stepSizeInput.value);
+            const refreshTimeValue = parseFloat(refreshTimeInput.value);
+            
+            if (isNaN(massValue) || isNaN(metallicityValue) || isNaN(endTimeValue) || 
+                isNaN(stepSizeValue) || isNaN(refreshTimeValue)) {
+                alert('请填写所有参数');
+                return;
+            }
+            
+            if (!checkMetallicityRange(massValue, metallicityValue, true)) {
+                return;
+            }
+            
+            if (!validateEndTime() || !validateStepSize()) {
+                alert('请修正参数错误后再提交');
+                return;
+            }
+            
+            // 保存当前恒星名称
+            currentStarName = starName;
+            
+            startSimulation(massValue, metallicityValue, endTimeValue, stepSizeValue, refreshTimeValue, starName);
+        });
+        
+        // 停止模拟按钮
+        stopBtn.addEventListener('click', function() {
+            if (simulationRunning) {
+                if (confirm('确定要停止当前模拟吗？已计算的数据将会保留。')) {
+                    stopSimulation();
+                }
+            }
+        });
+        
+        // 下载按钮
+        downloadBtn.addEventListener('click', function() {
+            downloadSimulationData();
+        });
+        
+        // 开始模拟函数
+        function startSimulation(mass, metallicity, endTime, stepSize, refreshTime, starName) {
+            simulationRunning = true;
+            simulationData = [];
+            outputBody.innerHTML = '';
+            
+            // 更新按钮状态
+            submitBtn.disabled = true;
+            stopBtn.style.display = 'inline-block';
+            
+            setStatus('模拟开始...', 'running');
+            
+            // 显示模拟信息
+            const lifetime = calculateLifetime(mass, metallicity);
+            const displayName = starName || `star_M${formatNumber(mass, 2)}_Z${formatNumber(metallicity, 4)}_t${formatNumber(endTime, 0)}`;
+            
+            simulationHeader.innerHTML = 
+                '<strong>恒星演化模拟 - ' + displayName + '</strong><br>' +
+                '质量: ' + formatNumber(mass, 4) + ' Msun | ' +
+                '金属度: ' + formatNumber(metallicity, 6) + ' | ' +
+                '演化终点: ' + formatNumber(endTime, 2) + ' Myr | ' +
+                '步长: ' + formatNumber(stepSize, 4) + ' Myr';
+            
+            simulationStats.innerHTML = 
+                '恒星名称: ' + displayName + '<br>' +
+                '预估主序寿命: ' + formatNumber(lifetime, 2) + ' Myr | ' +
+                '总步数: ' + Math.ceil(endTime / stepSize) + ' | ' +
+                '状态: <span style="color: #856404;">运行中</span>';
+            
+            downloadSection.style.display = 'none';
+            
+            // 开始模拟（使用setTimeout避免阻塞UI）
+            setTimeout(function() {
+                runSimulation(mass, metallicity, endTime, stepSize, refreshTime);
+            }, 100);
+        }
+        
+        // 运行模拟（基于Python算法移植）
+        function runSimulation(M, z, tend, dt, n) {
+            simulationStartTime = new Date();
+            
+            // 初始化变量（与Python代码保持一致）
+            let L, L0, R, R0, T, Mc, k, Tc, Tb, pp, cno;
+            let XHc = 0.5697;
+            let XHec = 0.4303;
+            let mu = 0.6839;
+            Tb = 18000000.0;
+            const Msun = Math.pow(10, 30) * 2;
+            const c = 299792458.0;
+            
+            // 计算初始参数（从Python代码移植）
+            const factor = Math.pow((z / 0.02), -0.025);
+            
+            // 计算初始光度L
+            if (M >= 0.799 && M <= 2.0) {
+                L = Math.pow(M, 4.65) * (0.6 + Math.pow(1.85, -200 * z));
+            } else if (M > 2.0 && M <= 10) {
+                L = (Math.pow(M, 4.2) + 6.73) * (0.6 + Math.pow(1.85, -200 * z));
+            } else if (M > 10 && M <= 16) {
+                L = (Math.pow(M, 2.542) * 34.452 + 6.73) * (0.6 + Math.pow(1.85, -200 * z));
+            } else if (M > 16 && M <= 20) {
+                L = Math.pow(M, 2.93) * Math.pow(10, 1.05) * (0.6 + Math.pow(1.85, -200 * z));
+            } else if (M > 20 && M <= 30) {
+                L = 14.62 * Math.pow(M, 2.715) * (0.914 + Math.pow(1.85, -200 * z));
+            }
+            L0 = L;
+            
+            // 计算初始半径R
+            if (M >= 0.8 && M <= 12) {
+                R0 = 0.9 * Math.pow(M, 0.9) * factor;
+            } else if (M >= 12) {
+                R0 = 8.424 * Math.pow((M/12), 0.5) * factor;
+            }
+            R = R0;
+            
+            // 计算Mc
+            if (M >= 0.8 && M <= 10) {
+                Mc = Math.pow(M, 0.6) * 0.57;
+            } else if (M > 10 && M <= 18) {
+                Mc = Math.pow((M/10), 0.616) * 2.269;
+            } else if (M > 18 && M <= 20) {
+                Mc = Math.pow((M/10), 0.785) * 2.269;
+            } else if (M > 20 && M <= 25) {
+                Mc = Math.pow((M/10), 1) * 4.09 * Math.pow((z/0.02), 0.1);
+            } else if (M > 25 && M <= 30) {
+                Mc = Math.pow((M/10), 1.3) * 3.478 * Math.pow((z/0.02), 0.1);
+            }
+            
+            // 计算k
+            if (M > 0.799 && M <= 1.6) {
+                k = ((85000.0) / (12160.0) * z + 0.860197) * (-0.71 * M + 1.435);
+            } else if (M > 1.6 && M <= 2.0) {
+                k = ((85000.0 / 12160.0) * z + 0.860197) * (-0.4475 * M + 1.015);
+            } else if (M > 2.0 && M <= 3.0) {
+                k = (-1.0 / 60.0) * M + (4.6 / 30.0) * ((85000 / 12160) * z + 0.860197);
+            } else if (M > 3.0 && M <= 4.5) {
+                k = ((-0.02) * M + 0.14) * ((85000.0 / 12160.0) * z + 0.860197);
+            } else if (M > 4.5 && M <= 8.0) {
+                k = ((-0.01) * M + 0.1) * ((85000.0 / 12160.0) * z + 0.860197);
+            } else if (M > 8.0 && M <= 10.000) {
+                k = 0.02 * ((85000.0 / 12160.0) * z + 0.860197);
+            } else if (M > 10 && M <= 18) {
+                k = 0.02 * Math.pow(2, -(M-10)/6) * ((85000.0 / 12160.0) * z + 0.860197);
+            } else if (M > 18 && M <= 20) {
+                k = 0.004 * ((85000.0 / 12160.0) * z + 0.860197);
+            } else if (M > 20 && M <= 30) {
+                k = 0.024 * ((85000.0 / 12160.0) * z + 0.860197);
+            }
+            
+            // 计算Tc和初始T
+            Tc = 15000000 * Math.pow(M, 0.34);
+            T = Math.pow((L / Math.pow(R, 2)), 0.25) * 5773.15;
+            
+            // 计算pp和cno
+            pp = Math.pow((Tc / Tb), 5) / (Math.pow((Tc / Tb), 5) + Math.pow((Tc / Tb), 15)) * L;
+            cno = L - pp;
+            
+            // 计算tau_base（用于半径计算）
+            let tau_base = 0;
+            if (M >= 0.799 && M < 1.0) {
+                tau_base = Math.pow(M, -3) * ((-0.6 * M + 1.2) / 0.6) * 10000;
+            } else if (M >= 1.0 && M <= 2.0) {
+                tau_base = Math.pow(M, -3) * 10000;
+            } else if (M > 2.0 && M <= 3.33) {
+                tau_base = Math.pow(M, -3) * (0.3 * M / 0.6) * 10000;
+            } else if (M > 3.33 && M <= 10) {
+                tau_base = Math.pow(M, -3) * (5.0 / 3.0) * 10000;
+            } else if (M > 10 && M <= 12) {
+                tau_base = Math.pow((M / 10), -1.542) * 16.67;
+            } else if (M > 12 && M <= 16) {
+                tau_base = Math.pow((M / 10), -1.542) * (0.0375 * M + 0.55) * 10.00 / 0.6;
+            } else if (M > 16 && M <= 30) {
+                tau_base = Math.pow((M / 16), -1.93) * ((27/280) * M - (11/28))/(1.15) * 7.428 * 1.25;
+            }
+            
+            // 存储初始数据
+            let t = 0.0;
+            simulationData.push({
+                time: t,
+                luminosity: L,
+                radius: R,
+                temperature: T
+            });
+            
+            addTableRow(t, L, R, T);
+            
+            // 主循环
+            const totalSteps = Math.ceil(tend / dt);
+            let currentStep = 0;
+            
+            function simulationStep() {
+                if (t >= tend || !simulationRunning) {
+                    simulationComplete();
+                    return;
+                }
+                
+                // 保存当前值
+                const XH0 = XHc;
+                const XHe0 = XHec;
+                const mu0 = mu;
+                const Tc0 = Tc;
+                const pp0 = pp;
+                const cno0 = cno;
+                const L0_current = L;
+                
+                // 计算delta_mass（质量损失）
+                const delta_mass = 200 * (L * 3.83e26) * (dt * 1e6 * 365.24 * 86400) / (c * c);
+                
+                // 更新氢丰度
+                XHc = (Mc * Msun * XH0 - delta_mass) / (Mc * Msun);
+                XHec = 1.0 - XHc;
+                
+                // 更新平均分子量
+                mu = 1 / (2 * XHc + 0.75 * XHec);
+                
+                // 更新核心温度
+                Tc = (0.95 * k * ((mu - mu0) / mu0) + 1) * Tc0;
+                
+                // 更新光度
+                L = pp0 * Math.pow((Tc / Tc0), 5) + cno0 * Math.pow((Tc / Tc0), 15);
+                
+                // 更新pp和cno
+                pp = pp0 * Math.pow((Tc / Tc0), 5);
+                cno = cno0 * Math.pow((Tc / Tc0), 15);
+                
+                // 更新半径（基于Python算法）
+                const tau_r = (t + dt) / calculateLifetime(M, z);
+                R = R * Math.pow((L / L0_current), 0.24*(1+Math.log10(M))+0.0007*(t/(0.002*tau_base))*Math.pow(M,1));
+                
+                // 更新表面温度
+                T = Math.pow((L / Math.pow(R, 2)), 0.25) * 5773.15;
+                
+                // 更新时间
+                t += dt;
+                currentStep++;
+                
+                // 存储数据
+                simulationData.push({
+                    time: t,
+                    luminosity: L,
+                    radius: R,
+                    temperature: T
+                });
+                
+                // 更新表格
+                addTableRow(t, L, R, T);
+                
+                // 更新状态
+                const progress = Math.min(100, (t / tend) * 100);
+                setStatus('模拟进行中: ' + progress.toFixed(1) + '% (' + currentStep + '/' + totalSteps + ' 步)', 'running');
+                
+                // 继续下一步
+                if (simulationRunning) {
+                    simulationTimer = setTimeout(simulationStep, n * 1000); // n秒后继续
+                }
+            }
+            
+            // 开始模拟循环
+            simulationStep();
+        }
+        
+        // 停止模拟
+        function stopSimulation() {
+            if (simulationRunning) {
+                simulationRunning = false;
+                
+                // 清除定时器
+                if (simulationTimer) {
+                    clearTimeout(simulationTimer);
+                    simulationTimer = null;
+                }
+                
+                // 更新按钮状态
+                submitBtn.disabled = false;
+                stopBtn.style.display = 'none';
+                
+                // 更新状态
+                const elapsedTime = (new Date() - simulationStartTime) / 1000;
+                setStatus('模拟已停止! 耗时: ' + formatNumber(elapsedTime, 1) + '秒，计算了 ' + simulationData.length + ' 步', 'stopped');
+                
+                // 更新模拟统计信息
+                simulationStats.innerHTML = simulationStats.innerHTML.replace('状态: <span style="color: #856404;">运行中</span>', 
+                    '状态: <span style="color: #383d41;">已停止</span>');
+                
+                // 显示下载选项
+                downloadSection.style.display = 'block';
+                fileInfo.textContent = '共 ' + simulationData.length + ' 行数据（模拟被停止）';
+                
+                alert('模拟已停止。已计算 ' + simulationData.length + ' 步数据，可以下载保存。');
+            }
+        }
+        
+        // 模拟完成
+        function simulationComplete() {
+            simulationRunning = false;
+            
+            // 清除定时器
+            if (simulationTimer) {
+                clearTimeout(simulationTimer);
+                simulationTimer = null;
+            }
+            
+            // 更新按钮状态
+            submitBtn.disabled = false;
+            stopBtn.style.display = 'none';
+            
+            setStatus('模拟完成! 耗时: ' + formatNumber((new Date() - simulationStartTime) / 1000, 1) + '秒', 'complete');
+            
+            // 更新模拟统计信息
+            simulationStats.innerHTML = simulationStats.innerHTML.replace('状态: <span style="color: #856404;">运行中</span>', 
+                '状态: <span style="color: #155724;">已完成</span>');
+            
+            // 显示下载选项
+            downloadSection.style.display = 'block';
+            fileInfo.textContent = '共 ' + simulationData.length + ' 行数据';
+            
+            // 滚动到表格底部
+            const tableContainer = document.querySelector('.table-container');
+            tableContainer.scrollTop = tableContainer.scrollHeight;
+        }
+        
+        // 添加表格行
+        function addTableRow(time, luminosity, radius, temperature) {
+            const row = document.createElement('tr');
+            
+            const timeCell = document.createElement('td');
+            timeCell.textContent = formatNumber(time, 4);
+            row.appendChild(timeCell);
+            
+            const lumCell = document.createElement('td');
+            lumCell.textContent = formatNumber(luminosity, 7);
+            row.appendChild(lumCell);
+            
+            const radiusCell = document.createElement('td');
+            radiusCell.textContent = formatNumber(radius, 7);
+            row.appendChild(radiusCell);
+            
+            const tempCell = document.createElement('td');
+            tempCell.textContent = formatNumber(temperature, 2);
+            row.appendChild(tempCell);
+            
+            outputBody.appendChild(row);
+        }
+        
+        // 下载模拟数据
+        function downloadSimulationData() {
+            const starName = currentStarName;
+            const mass = parseFloat(massInput.value);
+            const metallicity = parseFloat(metallicityInput.value);
+            const endTime = parseFloat(endTimeInput.value);
+            const stepSize = parseFloat(stepSizeInput.value);
+            
+            // 生成文件名
+            let filename;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            
+            if (starName) {
+                // 使用用户指定的恒星名称
+                filename = starName + '_' + timestamp + '.txt';
+            } else {
+                // 使用默认命名规则
+                filename = `star_M${formatNumber(mass, 2)}_Z${formatNumber(metallicity, 4)}_t${formatNumber(endTime, 0)}_${timestamp}.txt`;
+            }
+            
+            // 生成文件内容
+            let content = `恒星演化模拟数据 - 行星球宇宙\n`;
+            content += `生成时间: ${new Date().toLocaleString()}\n`;
+            content += `恒星名称: ${starName || `star_M${formatNumber(mass, 2)}_Z${formatNumber(metallicity, 4)}_t${formatNumber(endTime, 0)}`}\n`;
+            content += `恒星质量: ${formatNumber(mass, 4)} Msun\n`;
+            content += `金属度: ${formatNumber(metallicity, 6)}\n`;
+            content += `演化终点: ${formatNumber(endTime, 2)} Myr\n`;
+            content += `演化步长: ${formatNumber(stepSize, 4)} Myr\n`;
+            content += `预估主序寿命: ${formatNumber(calculateLifetime(mass, metallicity), 2)} Myr\n`;
+            content += `模拟状态: ${simulationRunning ? '运行中' : (simulationData.length > 0 ? '已完成/已停止' : '未开始')}\n`;
+            content += `实际计算步数: ${simulationData.length}\n`;
+            content += "=".repeat(60) + "\n";
+            content += "年龄(Myr)\t光度(Lsun)\t半径(Rsun)\t表面温度(K)\n";
+            content += "=".repeat(60) + "\n";
+            
+            simulationData.forEach(data => {
+                content += `${formatNumber(data.time, 10)}\t${formatNumber(data.luminosity, 7)}\t${formatNumber(data.radius, 7)}\t${formatNumber(data.temperature, 10)}\n`;
+            });
+            
+            content += "=".repeat(60) + "\n";
+            content += `模拟完成于: ${new Date().toLocaleString()}\n`;
+            content += `总步数: ${simulationData.length}\n`;
+            content += `最终年龄: ${formatNumber(simulationData[simulationData.length-1].time, 2)} Myr\n`;
+            content += `最终光度: ${formatNumber(simulationData[simulationData.length-1].luminosity, 4)} Lsun\n`;
+            content += `最终半径: ${formatNumber(simulationData[simulationData.length-1].radius, 4)} Rsun\n`;
+            content += `最终温度: ${formatNumber(simulationData[simulationData.length-1].temperature, 2)} K\n`;
+            
+            // 创建并下载文件
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('数据已下载: ' + filename);
+        }
+        
+        // 设置状态信息
+        function setStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-' + type;
+            statusDiv.style.display = 'block';
+        }
+        
+        // 辅助函数：检查金属度范围
+        function checkMetallicityRange(mass, metallicity, showAlert = false) {
+            if (isNaN(mass) || isNaN(metallicity)) return false;
+            
+            let isValid = true;
+            let message = '';
+            
+            if (mass > 20) {
+                if (metallicity < 0.02 || metallicity > 0.03) {
+                    message = '当质量大于20 Msun时，金属度必须在0.02至0.03之间';
+                    isValid = false;
+                    metallicityInput.value = Math.max(0.02, Math.min(0.03, metallicity));
+                }
+            } else if (mass > 15) {
+                if (metallicity < 0.01 || metallicity > 0.03) {
+                    message = '当质量大于15 Msun时，金属度必须在0.01至0.03之间';
+                    isValid = false;
+                    metallicityInput.value = Math.max(0.01, Math.min(0.03, metallicity));
+                }
+            } else {
+                if (metallicity < 0.001 || metallicity > 0.03) {
+                    message = '金属度必须在0.001至0.03之间';
+                    isValid = false;
+                    metallicityInput.value = Math.max(0.001, Math.min(0.03, metallicity));
+                }
+            }
+            
+            if (!isValid && showAlert && message) {
+                alert(message);
+            }
+            
+            return isValid;
+        }
+        
+        // 更新金属度范围提示
+        function updateMetallicityRange(mass) {
+            if (isNaN(mass)) return;
+            
+            if (mass > 20) {
+                metallicityRange.textContent = '范围: 0.02 - 0.03 (质量>20 Msun)';
+                metallicityInput.min = 0.02;
+                metallicityInput.max = 0.03;
+            } else if (mass > 15) {
+                metallicityRange.textContent = '范围: 0.01 - 0.03 (质量>15 Msun)';
+                metallicityInput.min = 0.01;
+                metallicityInput.max = 0.03;
+            } else {
+                metallicityRange.textContent = '范围: 0.001 - 0.03';
+                metallicityInput.min = 0.001;
+                metallicityInput.max = 0.03;
+            }
+        }
+        
+        // 验证演化终点
+        function validateEndTime() {
+            const endTimeValue = parseFloat(endTimeInput.value);
+            const massValue = parseFloat(massInput.value);
+            const metallicityValue = parseFloat(metallicityInput.value);
+            
+            if (isNaN(endTimeValue)) {
+                endTimeWarning.textContent = '';
+                return true;
+            }
+            
+            if (endTimeValue < 0) {
+                endTimeWarning.textContent = '演化终点不能为负数';
+                return false;
+            }
+            
+            if (!isNaN(massValue) && !isNaN(metallicityValue)) {
+                const lifetime = calculateLifetime(massValue, metallicityValue);
+                const maxAllowed = 0.8 * lifetime;
+                
+                if (endTimeValue > maxAllowed) {
+                    endTimeWarning.textContent = '警告：演化终点不应超过' + formatNumber(maxAllowed, 2) + ' Myr（主序寿命的80%）';
+                    return false;
+                }
+            }
+            
+            endTimeWarning.textContent = '';
+            return true;
+        }
+        
+        // 验证步长
+        function validateStepSize() {
+            const stepSizeValue = parseFloat(stepSizeInput.value);
+            const endTimeValue = parseFloat(endTimeInput.value);
+            
+            if (isNaN(stepSizeValue)) {
+                stepSizeWarning.textContent = '';
+                return true;
+            }
+            
+            if (stepSizeValue <= 0) {
+                stepSizeWarning.textContent = '步长必须大于0';
+                return false;
+            }
+            
+            if (!isNaN(endTimeValue) && stepSizeValue > endTimeValue) {
+                stepSizeWarning.textContent = '步长不能超过演化终点(' + formatNumber(endTimeValue, 2) + ' Myr)';
+                return false;
+            }
+            
+            stepSizeWarning.textContent = '';
+            return true;
+        }
+        
+        // 计算恒星寿命函数（从Python移植）
+        function calculateLifetime(mass, metallicity) {
+            let tau_base = 0;
+            
+            if (mass >= 0.799 && mass < 1.0) {
+                tau_base = Math.pow(mass, -3) * ((-0.6 * mass + 1.2) / 0.6) * 10000;
+            } else if (mass >= 1.0 && mass <= 2.0) {
+                tau_base = Math.pow(mass, -3) * 10000;
+            } else if (mass > 2.0 && mass <= 3.33) {
+                tau_base = Math.pow(mass, -3) * (0.3 * mass / 0.6) * 10000;
+            } else if (mass > 3.33 && mass <= 10) {
+                tau_base = Math.pow(mass, -3) * (5.0 / 3.0) * 10000;
+            } else if (mass > 10 && mass <= 12) {
+                tau_base = Math.pow((mass / 10), -1.542) * 16.67;
+            } else if (mass > 12 && mass <= 16) {
+                tau_base = Math.pow((mass / 10), -1.542) * (0.0375 * mass + 0.55) * 10.00 / 0.6;
+            } else if (mass > 16 && mass <= 30) {
+                tau_base = Math.pow((mass / 16), -1.93) * ((27/280) * mass - (11/28))/(1.15) * 7.428 * 1.25;
+            } else {
+                return 0;
+            }
+            
+            return Math.pow((metallicity / 0.02), 0.19953) * tau_base;
+        }
+        
+        // 更新寿命信息显示
+        function updateLifetimeInfo() {
+            const massValue = parseFloat(massInput.value);
+            const metallicityValue = parseFloat(metallicityInput.value);
+            
+            if (isNaN(massValue) || isNaN(metallicityValue)) {
+                lifetimeDetails.innerHTML = '请输入质量和金属度以查看寿命信息';
+                return;
+            }
+            
+            const lifetime = calculateLifetime(massValue, metallicityValue);
+            const eightyPercent = 0.8 * lifetime;
+            const recommendedStep = lifetime * 0.002;
+            
+            lifetimeDetails.innerHTML = 
+                '<div>预估主序寿命: <strong>' + formatNumber(lifetime, 2) + ' Myr</strong></div>' +
+                '<div>演化终点限制(80%寿命): <strong>' + formatNumber(eightyPercent, 2) + ' Myr</strong></div>' +
+                '<div>推荐步长(寿命的0.2%): <strong>' + formatNumber(recommendedStep, 4) + ' Myr</strong></div>' +
+                '<div style="font-size: 0.9em; color: #666; margin-top: 5px;">注意：演化终点不建议超过主序寿命的80%，步长不能超过演化终点</div>';
+        }
+        
+        // 重置为标准参数
+        function resetToStandardParams() {
+            starNameInput.value = STANDARD_PARAMS.starName;
+            massInput.value = STANDARD_PARAMS.mass;
+            metallicityInput.value = STANDARD_PARAMS.metallicity;
+            endTimeInput.value = STANDARD_PARAMS.endTime;
+            stepSizeInput.value = STANDARD_PARAMS.stepSize;
+            refreshTimeInput.value = STANDARD_PARAMS.refreshTime;
+            
+            updateMetallicityRange(STANDARD_PARAMS.mass);
+            endTimeWarning.textContent = '';
+            stepSizeWarning.textContent = '';
+            updateLifetimeInfo();
+        }
+    </script>
+</body>
+</html>
