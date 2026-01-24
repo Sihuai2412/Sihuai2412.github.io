@@ -997,7 +997,7 @@
                 const lifetime = calculateLifetime(massValue, metallicityValue);
                 const maxAllowed = 0.8 * lifetime;
                 
-                if (endTimeValue > maxAllowed) {
+                if (endTimeValue > maxAllowed + 0.0001) {
                     endTimeWarning.textContent = '警告：演化终点不应超过' + formatNumber(maxAllowed, 2) + ' Myr（主序寿命的80%）';
                     return false;
                 }
