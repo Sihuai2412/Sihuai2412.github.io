@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>行星球宇宙网页版1.0.0</title>
+    <title>行星球宇宙</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -101,8 +101,22 @@
             background-color: #f57c00;
         }
         
+        #download-btn {
+            background-color: #f44336; /* 改为红色 */
+        }
+        
+        #download-btn:hover {
+            background-color: #d32f2f; /* 深红色悬停效果 */
+        }
+        
         .warning {
             color: red;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+        
+        .success {
+            color: green;
             margin-left: 10px;
             font-size: 0.9em;
         }
@@ -219,11 +233,22 @@
             color: #666;
             margin-top: 3px;
         }
+        
+        .input-with-button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-with-button input {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
-    <h2>行星球宇宙网页版1.0.0</h2>
-    
+    <h2>行星球宇宙网页版1.1.0</h2>
+    <h5>tip:反馈bug请到 @一颗A5V恒星 的专栏网页端反馈bug专区</h5>
+    <h5>tip：当演化终点等于主序寿命的80%却显示超过时，稍微调小点就行</h5>
     <div class="container">
         <div class="input-section">
             <h3>输入参数</h3>
@@ -236,13 +261,13 @@
             
             <div class="input-group">
                 <label for="mass">恒星质量 (Msun):</label>
-                <input id="mass" type="number" max="30" min="0.8" step="0.2" value="1.0">
-                <div class="range-info">范围: 0.8 - 30 Msun</div>
+                <input id="mass" type="number" max="30" min="0.077" step="0.001" value="1.0">
+                <div class="range-info">范围: 0.077 - 30 Msun</div>
             </div>
             
             <div class="input-group">
                 <label for="metallicity">金属度:</label>
-                <input id="metallicity" type="number" step="0.001" value="0.02">
+                <input id="metallicity" type="number" step="0.0001" value="0.02">
                 <div id="metallicity-range" class="range-info">范围: 0.001 - 0.03</div>
             </div>
             
@@ -250,6 +275,7 @@
                 <label for="end-time">演化终点 (Myr):</label>
                 <input id="end-time" type="number" min="0" step="1">
                 <div id="end-time-warning" class="warning"></div>
+                <div id="end-time-success" class="success"></div>
             </div>
             
             <div class="input-group">
@@ -324,6 +350,7 @@
         const submitBtn = document.getElementById('submit-btn');
         const stopBtn = document.getElementById('stop-btn');
         const endTimeWarning = document.getElementById('end-time-warning');
+        const endTimeSuccess = document.getElementById('end-time-success');
         const stepSizeWarning = document.getElementById('step-size-warning');
         const lifetimeDetails = document.getElementById('lifetime-details');
         const metallicityRange = document.getElementById('metallicity-range');
@@ -415,9 +442,9 @@
         massInput.addEventListener('change', function() {
             const value = parseFloat(this.value);
             if (!isNaN(value)) {
-                if (value < 0.8) {
-                    alert('质量不能小于0.8 Msun');
-                    this.value = 0.8;
+                if (value < 0.077) {
+                    alert('质量不能小于0.077 Msun (V3.0新下限)');
+                    this.value = 0.077;
                 } else if (value > 30) {
                     alert('质量不能大于30 Msun');
                     this.value = 30;
@@ -439,10 +466,14 @@
         });
         
         // 演化终点输入框的验证
-        endTimeInput.addEventListener('change', validateEndTime);
+        endTimeInput.addEventListener('change', function() {
+            validateEndTime();
+        });
         
         // 演化步长输入框的验证
-        stepSizeInput.addEventListener('change', validateStepSize);
+        stepSizeInput.addEventListener('change', function() {
+            validateStepSize();
+        });
         
         // 间隔时间输入框的验证
         refreshTimeInput.addEventListener('change', function() {
@@ -468,17 +499,32 @@
             }
             
             const lifetime = calculateLifetime(massValue, metallicityValue);
+            const halfLife = 0.5 * lifetime;
             const eightyPercent = 0.8 * lifetime;
+            const endTimeValue = parseFloat(endTimeInput.value) || 0;
             
             endTimeInput.value = formatNumber(eightyPercent, 2);
-            const recommendedStep = lifetime * 0.002;
+            
+            // 根据V3.0算法决定步长
+            let recommendedStep;
+            if (endTimeValue <= halfLife) {
+                // 使用推荐步长
+                recommendedStep = lifetime * 0.002;
+            } else {
+                // 使用V3.0的自动分配算法
+                recommendedStep = Math.pow((endTimeValue / halfLife), 4) * (0.002 * Math.pow(massValue, -3) * 10000);
+            }
+            
             stepSizeInput.value = formatNumber(recommendedStep, 4);
             
             endTimeWarning.textContent = '';
+            endTimeSuccess.textContent = '已自动填充推荐参数 (80%寿命)';
             stepSizeWarning.textContent = '';
             updateLifetimeInfo();
             
-            alert('已自动填充推荐参数：\n演化终点：' + formatNumber(eightyPercent, 2) + ' Myr (80%寿命)\n步长：' + formatNumber(recommendedStep, 4) + ' Myr (寿命的0.2%)');
+            setTimeout(function() {
+                endTimeSuccess.textContent = '';
+            }, 3000);
         });
         
         // 重置为标准参数按钮
@@ -497,6 +543,7 @@
             
             updateMetallicityRange(STANDARD_PARAMS.mass);
             endTimeWarning.textContent = '';
+            endTimeSuccess.textContent = '';
             stepSizeWarning.textContent = '';
             updateLifetimeInfo();
             
@@ -569,7 +616,7 @@
             const displayName = starName || `star_M${formatNumber(mass, 2)}_Z${formatNumber(metallicity, 4)}_t${formatNumber(endTime, 0)}`;
             
             simulationHeader.innerHTML = 
-                '<strong>恒星演化模拟 - ' + displayName + '</strong><br>' +
+                '<strong>恒星演化模拟 V3.0 - ' + displayName + '</strong><br>' +
                 '质量: ' + formatNumber(mass, 4) + ' Msun | ' +
                 '金属度: ' + formatNumber(metallicity, 6) + ' | ' +
                 '演化终点: ' + formatNumber(endTime, 2) + ' Myr | ' +
@@ -589,11 +636,11 @@
             }, 100);
         }
         
-        // 运行模拟（基于Python算法移植）
+        // 运行模拟（基于Python V3.0算法移植）
         function runSimulation(M, z, tend, dt, n) {
             simulationStartTime = new Date();
             
-            // 初始化变量（与Python代码保持一致）
+            // 初始化变量（与Python V3.0代码保持一致）
             let L, L0, R, R0, T, Mc, k, Tc, Tb, pp, cno;
             let XHc = 0.5697;
             let XHec = 0.4303;
@@ -602,11 +649,13 @@
             const Msun = Math.pow(10, 30) * 2;
             const c = 299792458.0;
             
-            // 计算初始参数（从Python代码移植）
+            // 计算初始参数（从Python V3.0代码移植）
             const factor = Math.pow((z / 0.02), -0.025);
             
-            // 计算初始光度L
-            if (M >= 0.799 && M <= 2.0) {
+            // 计算初始光度L - V3.0算法
+            if (M >= 0.077 && M < 0.8) {
+                L = Math.pow(M, 3.094) * 0.689 * (0.6 + Math.pow(1.85, -200 * z));
+            } else if (M >= 0.8 && M <= 2.0) {
                 L = Math.pow(M, 4.65) * (0.6 + Math.pow(1.85, -200 * z));
             } else if (M > 2.0 && M <= 10) {
                 L = (Math.pow(M, 4.2) + 6.73) * (0.6 + Math.pow(1.85, -200 * z));
@@ -619,29 +668,53 @@
             }
             L0 = L;
             
-            // 计算初始半径R
-            if (M >= 0.8 && M <= 12) {
+            // 计算tau_base - V3.0算法
+            let tau_base = 0;
+            if (M >= 0.077 && M < 0.8) {
+                tau_base = M * (-0.6 * M + 1.2) * 10000 / Math.pow(M, 3.7);
+            } else if (M >= 0.8 && M < 1.0) {
+                tau_base = Math.pow(M, -3) * ((-0.6 * M + 1.2) / 0.6) * 10000;
+            } else if (M >= 1.0 && M <= 2.0) {
+                tau_base = Math.pow(M, -3) * 10000;
+            } else if (M > 2.0 && M <= 3.33) {
+                tau_base = Math.pow(M, -3) * (0.3 * M / 0.6) * 10000;
+            } else if (M > 3.33 && M <= 10) {
+                tau_base = Math.pow(M, -3) * (5.0 / 3.0) * 10000;
+            } else if (M > 10 && M <= 12) {
+                tau_base = Math.pow((M / 10), -1.542) * 16.67;
+            } else if (M > 12 && M <= 16) {
+                tau_base = Math.pow((M / 10), -1.542) * (0.0375 * M + 0.55) * 10.00 / 0.6;
+            } else if (M > 16 && M <= 30) {
+                tau_base = Math.pow((M / 16), -1.93) * ((27/280) * M - (11/28))/(1.15) * 7.428 * 1.25;
+            }
+            
+            // 计算初始半径R - V3.0算法
+            if (M >= 0.077 && M <= 12) {
                 R0 = 0.9 * Math.pow(M, 0.9) * factor;
-            } else if (M >= 12) {
+            } else if (M > 12) {
                 R0 = 8.424 * Math.pow((M/12), 0.5) * factor;
             }
             R = R0;
             
-            // 计算Mc
-            if (M >= 0.8 && M <= 10) {
-                Mc = Math.pow(M, 0.6) * 0.57;
+            // 计算Mc - V3.0算法
+            if (M >= 0.077 && M < 0.8) {
+                Mc = (-0.6 * M + 1.2) * 0.57 * (0.5889 * Math.pow(z, -0.1353));
+            } else if (M >= 0.8 && M <= 10) {
+                Mc = Math.pow(M, 0.6) * 0.57 * (0.5889 * Math.pow(z, -0.1353));
             } else if (M > 10 && M <= 18) {
-                Mc = Math.pow((M/10), 0.616) * 2.269;
+                Mc = Math.pow((M/10), 0.616) * 2.269 * (0.5889 * Math.pow(z, -0.1353));
             } else if (M > 18 && M <= 20) {
-                Mc = Math.pow((M/10), 0.785) * 2.269;
+                Mc = Math.pow((M/10), 0.785) * 2.269 * (0.5889 * Math.pow(z, -0.1353));
             } else if (M > 20 && M <= 25) {
                 Mc = Math.pow((M/10), 1) * 4.09 * Math.pow((z/0.02), 0.1);
             } else if (M > 25 && M <= 30) {
                 Mc = Math.pow((M/10), 1.3) * 3.478 * Math.pow((z/0.02), 0.1);
             }
             
-            // 计算k
-            if (M > 0.799 && M <= 1.6) {
+            // 计算k - V3.0算法（扩展了参数范围）
+            if (M >= 0.077 && M < 0.8) {
+                k = (-2) * M + 2.47;
+            } else if (M >= 0.8 && M <= 1.6) {
                 k = ((85000.0) / (12160.0) * z + 0.860197) * (-0.71 * M + 1.435);
             } else if (M > 1.6 && M <= 2.0) {
                 k = ((85000.0 / 12160.0) * z + 0.860197) * (-0.4475 * M + 1.015);
@@ -668,24 +741,6 @@
             // 计算pp和cno
             pp = Math.pow((Tc / Tb), 5) / (Math.pow((Tc / Tb), 5) + Math.pow((Tc / Tb), 15)) * L;
             cno = L - pp;
-            
-            // 计算tau_base（用于半径计算）
-            let tau_base = 0;
-            if (M >= 0.799 && M < 1.0) {
-                tau_base = Math.pow(M, -3) * ((-0.6 * M + 1.2) / 0.6) * 10000;
-            } else if (M >= 1.0 && M <= 2.0) {
-                tau_base = Math.pow(M, -3) * 10000;
-            } else if (M > 2.0 && M <= 3.33) {
-                tau_base = Math.pow(M, -3) * (0.3 * M / 0.6) * 10000;
-            } else if (M > 3.33 && M <= 10) {
-                tau_base = Math.pow(M, -3) * (5.0 / 3.0) * 10000;
-            } else if (M > 10 && M <= 12) {
-                tau_base = Math.pow((M / 10), -1.542) * 16.67;
-            } else if (M > 12 && M <= 16) {
-                tau_base = Math.pow((M / 10), -1.542) * (0.0375 * M + 0.55) * 10.00 / 0.6;
-            } else if (M > 16 && M <= 30) {
-                tau_base = Math.pow((M / 16), -1.93) * ((27/280) * M - (11/28))/(1.15) * 7.428 * 1.25;
-            }
             
             // 存储初始数据
             let t = 0.0;
@@ -717,7 +772,7 @@
                 const cno0 = cno;
                 const L0_current = L;
                 
-                // 计算delta_mass（质量损失）
+                // 计算delta_mass（质量损失）- V3.0算法
                 const delta_mass = 200 * (L * 3.83e26) * (dt * 1e6 * 365.24 * 86400) / (c * c);
                 
                 // 更新氢丰度
@@ -737,9 +792,16 @@
                 pp = pp0 * Math.pow((Tc / Tc0), 5);
                 cno = cno0 * Math.pow((Tc / Tc0), 15);
                 
-                // 更新半径（基于Python算法）
-                const tau_r = (t + dt) / calculateLifetime(M, z);
-                R = R * Math.pow((L / L0_current), 0.24*(1+Math.log10(M))+0.0007*(t/(0.002*tau_base))*Math.pow(M,1));
+                // 更新半径（基于Python V3.0算法）
+                const tau = Math.pow((z / 0.02), 0.19953) * tau_base;
+                const tau_r = (t + dt) / tau;
+                
+                // V3.0半径演化算法
+                if (M >= 0.8) {
+                    R = R * Math.pow((L / L0_current), 0.24*(1+Math.log10(M))+0.0007*(t/(0.002*tau_base))*Math.pow(M,1));
+                } else if (M < 0.8) {
+                    R = R * Math.pow((L/L0_current), 0.24*(1+Math.log(M,20)));
+                }
                 
                 // 更新表面温度
                 T = Math.pow((L / Math.pow(R, 2)), 0.25) * 5773.15;
@@ -877,8 +939,9 @@
             }
             
             // 生成文件内容
-            let content = `恒星演化模拟数据 - 行星球宇宙\n`;
+            let content = `恒星演化模拟数据 V3.0 - 行星球宇宙\n`;
             content += `生成时间: ${new Date().toLocaleString()}\n`;
+            content += `版本: Test-V3.0 (2026年02月01日)\n`;
             content += `恒星名称: ${starName || `star_M${formatNumber(mass, 2)}_Z${formatNumber(metallicity, 4)}_t${formatNumber(endTime, 0)}`}\n`;
             content += `恒星质量: ${formatNumber(mass, 4)} Msun\n`;
             content += `金属度: ${formatNumber(metallicity, 6)}\n`;
@@ -977,7 +1040,7 @@
             }
         }
         
-        // 验证演化终点
+        // 验证演化终点 - 修复边界条件bug
         function validateEndTime() {
             const endTimeValue = parseFloat(endTimeInput.value);
             const massValue = parseFloat(massInput.value);
@@ -985,11 +1048,13 @@
             
             if (isNaN(endTimeValue)) {
                 endTimeWarning.textContent = '';
+                endTimeSuccess.textContent = '';
                 return true;
             }
             
             if (endTimeValue < 0) {
                 endTimeWarning.textContent = '演化终点不能为负数';
+                endTimeSuccess.textContent = '';
                 return false;
             }
             
@@ -997,13 +1062,27 @@
                 const lifetime = calculateLifetime(massValue, metallicityValue);
                 const maxAllowed = 0.8 * lifetime;
                 
-                if (endTimeValue > maxAllowed + 0.0001) {
+                // 修复：将 > 改为 >，并增加容差处理浮点数精度问题
+                const epsilon = 1e-10; // 很小的容差值
+                if (endTimeValue > maxAllowed + epsilon) {
                     endTimeWarning.textContent = '警告：演化终点不应超过' + formatNumber(maxAllowed, 2) + ' Myr（主序寿命的80%）';
+                    endTimeSuccess.textContent = '';
                     return false;
+                } else if (Math.abs(endTimeValue - maxAllowed) <= epsilon) {
+                    // 正好等于80%寿命
+                    endTimeWarning.textContent = '';
+                    endTimeSuccess.textContent = '✓ 演化终点等于主序寿命的80% (' + formatNumber(maxAllowed, 2) + ' Myr)';
+                    return true;
+                } else {
+                    // 小于80%寿命
+                    endTimeWarning.textContent = '';
+                    endTimeSuccess.textContent = '演化终点在安全范围内 (' + formatNumber(endTimeValue/maxAllowed*100, 1) + '% 的80%寿命)';
+                    return true;
                 }
             }
             
             endTimeWarning.textContent = '';
+            endTimeSuccess.textContent = '';
             return true;
         }
         
@@ -1031,11 +1110,13 @@
             return true;
         }
         
-        // 计算恒星寿命函数（从Python移植）
+        // 计算恒星寿命函数（从Python V3.0移植）
         function calculateLifetime(mass, metallicity) {
             let tau_base = 0;
             
-            if (mass >= 0.799 && mass < 1.0) {
+            if (mass >= 0.077 && mass < 0.8) {
+                tau_base = mass * (-0.6 * mass + 1.2) * 10000 / Math.pow(mass, 3.7);
+            } else if (mass >= 0.8 && mass < 1.0) {
                 tau_base = Math.pow(mass, -3) * ((-0.6 * mass + 1.2) / 0.6) * 10000;
             } else if (mass >= 1.0 && mass <= 2.0) {
                 tau_base = Math.pow(mass, -3) * 10000;
@@ -1067,14 +1148,17 @@
             }
             
             const lifetime = calculateLifetime(massValue, metallicityValue);
+            const halfLife = 0.5 * lifetime;
             const eightyPercent = 0.8 * lifetime;
             const recommendedStep = lifetime * 0.002;
             
             lifetimeDetails.innerHTML = 
                 '<div>预估主序寿命: <strong>' + formatNumber(lifetime, 2) + ' Myr</strong></div>' +
+                '<div>主序过半界限: <strong>' + formatNumber(halfLife, 2) + ' Myr</strong></div>' +
                 '<div>演化终点限制(80%寿命): <strong>' + formatNumber(eightyPercent, 2) + ' Myr</strong></div>' +
                 '<div>推荐步长(寿命的0.2%): <strong>' + formatNumber(recommendedStep, 4) + ' Myr</strong></div>' +
-                '<div style="font-size: 0.9em; color: #666; margin-top: 5px;">注意：演化终点不建议超过主序寿命的80%，步长不能超过演化终点</div>';
+                '<div style="font-size: 0.9em; color: #666; margin-top: 5px;">注意：演化终点不建议超过主序寿命的80%</div>' +
+                '<div style="font-size: 0.9em; color: #666;">V3.0更新：支持0.077-30 Msun质量范围，优化半径演化算法</div>';
         }
         
         // 重置为标准参数
@@ -1088,6 +1172,7 @@
             
             updateMetallicityRange(STANDARD_PARAMS.mass);
             endTimeWarning.textContent = '';
+            endTimeSuccess.textContent = '';
             stepSizeWarning.textContent = '';
             updateLifetimeInfo();
         }
