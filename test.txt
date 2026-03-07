@@ -1,1 +1,39 @@
-print("Hello World!")
+-- 生成谢尔宾斯基三角形图案
+local function sierpinskiTriangle(size)
+    local triangle = {}
+    
+    -- 初始化第一行
+    triangle[1] = {"*"}
+    
+    -- 递归构建
+    for i = 2, size do
+        local prev = triangle[i-1]
+        local current = {}
+        
+        -- 左半部分
+        for j = 1, #prev do
+            current[j] = prev[j] .. " " .. prev[j]
+        end
+        
+        -- 填充中间的空格
+        local spaces = string.rep(" ", #prev[1])
+        for j = 1, #prev do
+            current[j + #prev] = spaces .. prev[j] .. spaces
+        end
+        
+        triangle[i] = current
+    end
+    
+    -- 格式化为字符串
+    local result = {}
+    for i = 1, size do
+        local indent = string.rep(" ", size - i)
+        for j = 1, #triangle[i] do
+            result[#result+1] = indent .. triangle[i][j]
+        end
+    end
+    
+    return table.concat(result, "\n")
+end
+
+print(sierpinskiTriangle(6))
