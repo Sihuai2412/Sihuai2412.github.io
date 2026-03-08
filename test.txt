@@ -1,1 +1,3 @@
-print("Hello World!")
+print("请求中")
+local message = sendAI("输出一句金句，要求看似非常励志却又很搞笑，可以加入emoji，小于二十个字，不要说其他任何话，直接输出。")
+print("每日金句:", message)
