@@ -17,6 +17,9 @@ body{margin:0;overflow:hidden;touch-action:none}
 #hud{position:fixed;top:20px;left:20px;color:#222;font:24px Arial;z-index:10;pointer-events:none}
 #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#222;font:32px Arial;display:none;z-index:30;background:rgba(255,255,255,0.9);padding:20px 40px;border-radius:10px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.2);cursor:pointer;pointer-events:auto}
 #msg span{font-size:20px;display:block;margin-top:8px}
+#god-layer{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:25;overflow:hidden}
+.god-emoji{position:absolute;font-size:40px;animation:godFloat 6s linear forwards;opacity:0.8;font-family:"Segoe UI Emoji","Apple Color Emoji",sans-serif}
+@keyframes godFloat{0%{transform:translateX(0) rotate(0deg);opacity:0.9}100%{transform:translateX(-110vw) rotate(720deg);opacity:0}}
 </style>
 </head>
 <body>
@@ -29,8 +32,11 @@ body{margin:0;overflow:hidden;touch-action:none}
 <button class=down id=downBtn>▼</button>
 <button class=right id=rightBtn>▶</button>
 </div>
+<div id="god-layer"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ========== 场景 ==========
 const S=new THREE.Scene();
 S.background=new THREE.Color(0xeeeeee);
 const G=new THREE.GridHelper(200,200,0x888888,0x444444);
@@ -43,7 +49,7 @@ const E=new THREE.WebGLRenderer();
 E.setSize(innerWidth,innerHeight);document.body.appendChild(E.domElement);
 const L=new THREE.DirectionalLight(16777215,.8);L.position.set(10,20,10);S.add(L);S.add(new THREE.AmbientLight(0x446688));
 
-// 随机游动绿色小生物
+// ========== 小生物 ==========
 const B=[];
 for(let i=0;i<50;i++){
 const s=.12+Math.random()*.18;
@@ -53,6 +59,7 @@ S.add(m);
 B.push({m,vx:(Math.random()-.5)*.025,vz:(Math.random()-.5)*.025});
 }
 
+// ========== 平台 ==========
 const P=[];let score=0,gameOver=!1,win=!1;
 const PW=2,PD=2,GAP=PW*2.5,COUNT=20;
 function addPlatform(x,z,hasStar=!0){
@@ -60,7 +67,6 @@ const m=new THREE.Mesh(new THREE.BoxGeometry(PW,.3,PD),new THREE.MeshStandardMat
 m.position.set(x,0,z);S.add(m);
 let st=null;
 if(hasStar){
-// 白色扁方块 - 报告单
 st=new THREE.Mesh(new THREE.BoxGeometry(.5,.05,.7),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xcccccc,emissiveIntensity:.3}));
 st.position.set(x+(Math.random()-.5)*PW*.6,.25,z+(Math.random()-.5)*PD*.6);
 st.rotation.y=Math.random()*Math.PI;
@@ -70,6 +76,7 @@ P.push({m,st,x,z,w:PW,d:PD,scored:!1});
 }
 function build(){P.forEach(p=>{S.remove(p.m);if(p.st)S.remove(p.st)});P.length=0;addPlatform(0,0,!1);for(let i=1;i<COUNT;i++)addPlatform(i*GAP,(Math.random()-.5)*3)}build();
 
+// ========== 玩家物理 ==========
 let vy=0,onGround=!1;
 const gravity=-.005,jumpSpeed=.12,moveSpeed=.08;
 const keys={};
@@ -86,21 +93,99 @@ document.addEventListener('keyup',e=>{keys[e.key]=!1});
 document.addEventListener('touchstart',()=>{if(btnHidden){btn.style.opacity='1';btnHidden=!1}},{passive:!0});
 document.addEventListener('mousedown',()=>{if(btnHidden){btn.style.opacity='1';btnHidden=!1}});
 
+// ========== 按钮 ==========
 let mu=0,md=0,ml=0,mr=0;
 function setup(id,onS,onE){const el=document.getElementById(id);if(!el)return;const st=e=>{e.preventDefault();if(!gameOver&&!win)onS()};const ed=e=>{e.preventDefault();if(onE)onE()};el.addEventListener('touchstart',st,{passive:!1});el.addEventListener('touchend',ed,{passive:!1});el.addEventListener('touchcancel',ed,{passive:!1});el.addEventListener('mousedown',st);el.addEventListener('mouseup',ed);el.addEventListener('mouseleave',ed)}
 setup('upBtn',()=>{mu=1},()=>{mu=0});setup('downBtn',()=>{md=1},()=>{md=0});setup('leftBtn',()=>{ml=1},()=>{ml=0});setup('rightBtn',()=>{mr=1},()=>{mr=0});setup('jumpBtn',()=>{if(onGround){vy=jumpSpeed;onGround=!1}});
 
+// ========== 视角 ==========
+let touchRotateStart={x:0,y:0};
+let isTouchRotating=false;
+E.domElement.addEventListener('touchstart',(e)=>{if(e.touches.length===1&&!gameOver&&!win){const t=e.touches[0];touchRotateStart.x=t.clientX;touchRotateStart.y=t.clientY;isTouchRotating=true}},{passive:true});
+E.domElement.addEventListener('touchmove',(e)=>{if(isTouchRotating&&e.touches.length===1){const t=e.touches[0];const dx=t.clientX-touchRotateStart.x;const dy=t.clientY-touchRotateStart.y;yaw-=dx*0.005;pitch-=dy*0.005;pitch=Math.max(-1.2,Math.min(1.2,pitch));touchRotateStart.x=t.clientX;touchRotateStart.y=t.clientY}},{passive:true});
+E.domElement.addEventListener('touchend',()=>{isTouchRotating=false},{passive:true});
+
+let isMouseDragging=false;let mouseDragStart={x:0,y:0};
+E.domElement.addEventListener('mousedown',(e)=>{if(!document.pointerLockElement&&!gameOver&&!win&&e.button===0){isMouseDragging=true;mouseDragStart.x=e.clientX;mouseDragStart.y=e.clientY}});
+document.addEventListener('mousemove',(e)=>{if(isMouseDragging){const dx=e.clientX-mouseDragStart.x;const dy=e.clientY-mouseDragStart.y;yaw-=dx*0.005;pitch-=dy*0.005;pitch=Math.max(-1.2,Math.min(1.2,pitch));mouseDragStart.x=e.clientX;mouseDragStart.y=e.clientY}});
+document.addEventListener('mouseup',()=>{isMouseDragging=false});
+
 E.domElement.addEventListener('click',()=>{if(!gameOver&&!win)E.domElement.requestPointerLock()});
-document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement===E.domElement)document.addEventListener('mousemove',onMouse);else document.removeEventListener('mousemove',onMouse)});
+document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement===E.domElement){document.addEventListener('mousemove',onMouse);isMouseDragging=false}else{document.removeEventListener('mousemove',onMouse)}});
 let yaw=0,pitch=0;
 function onMouse(e){yaw-=e.movementX*.002;pitch-=e.movementY*.002;pitch=Math.max(-1.2,Math.min(1.2,pitch))}
 
 const hud=document.getElementById('hud'),msg=document.getElementById('msg');
-function reset(){if(document.pointerLockElement)document.exitPointerLock();gameOver=!1;win=!1;P.forEach(p=>{S.remove(p.m);if(p.st)S.remove(p.st)});P.length=0;build();C.position.set(0,1,0);vy=0;onGround=!1;score=0;msg.style.display='none';mu=md=ml=mr=0;btn.style.opacity='1';btnHidden=!1}
-msg.addEventListener('click',reset);E.domElement.addEventListener('click',()=>{if(gameOver||win)reset()});
+const godLayer=document.getElementById('god-layer');
+
+// ========== 神风特效（纯 CSS 动画，不卡） ==========
+let godActive=false;
+let godTimer=null;
+let godStartTime=0;
+const godEmojis=['🙏','🌬️','🌀','⚡','🌪️','💨','✨','🌟','🌿','🔥','🌊','🌈','☯️','🕉️','🧘','🌺'];
+
+function triggerGodWind(){
+    if(godActive) return;
+    godActive=true;
+    godStartTime=Date.now();
+    godLayer.innerHTML='';
+    
+    const count=30;
+    for(let i=0;i<count;i++){
+        const el=document.createElement('span');
+        el.className='god-emoji';
+        el.textContent=godEmojis[Math.floor(Math.random()*godEmojis.length)];
+        const size=30+Math.random()*45;
+        const dur=5+Math.random()*3;
+        const delay=Math.random()*0.8;
+        el.style.cssText=`
+            font-size:${size}px;
+            top:${Math.random()*100}%;
+            left:${100+Math.random()*50}%;
+            animation-duration:${dur}s;
+            animation-delay:${delay}s;
+            opacity:${0.5+Math.random()*0.5};
+        `;
+        godLayer.appendChild(el);
+    }
+    
+    if(godTimer) clearTimeout(godTimer);
+    godTimer=setTimeout(()=>{
+        godActive=false;
+        godLayer.innerHTML='';
+        godTimer=null;
+    }, 7000);
+}
+
+function getGodSway(){
+    if(!godActive) return 0;
+    const elapsed=Date.now()-godStartTime;
+    if(elapsed>7000) return 0;
+    const progress=elapsed/7000;
+    const amp=Math.sin(progress*Math.PI)*2.0;
+    return Math.sin(Date.now()/200)*amp*0.08;
+}
+// ========== 神风特效结束 ==========
+
+function reset(){
+    if(document.pointerLockElement)document.exitPointerLock();
+    gameOver=!1;win=!1;
+    P.forEach(p=>{S.remove(p.m);if(p.st)S.remove(p.st)});
+    P.length=0;build();
+    C.position.set(0,1,0);vy=0;onGround=!1;score=0;
+    msg.style.display='none';
+    mu=md=ml=mr=0;
+    btn.style.opacity='1';btnHidden=!1;
+    godActive=false;
+    if(godTimer){clearTimeout(godTimer);godTimer=null}
+    godLayer.innerHTML='';
+}
+msg.addEventListener('click',reset);
+E.domElement.addEventListener('click',()=>{if(gameOver||win)reset()});
 
 function check(pos){const fy=pos.y-1;if(fy>.1)return null;for(const p of P){const dx=pos.x-p.x,dz=pos.z-p.z;if(Math.abs(dx)<p.w/2&&Math.abs(dz)<p.d/2){if(fy<=0&&vy<=0)return p}}return null}
 
+// ========== 主循环 ==========
 function loop(){
 for(const b of B){b.m.position.x+=b.vx;b.m.position.z+=b.vz;if(b.m.position.x<-20||b.m.position.x>35)b.vx*=-1;if(b.m.position.z<-15||b.m.position.z>15)b.vz*=-1;b.m.rotation.y+=.02}
 if(!gameOver&&!win){
@@ -112,11 +197,27 @@ if(keys['s']||keys['S']){mx-=f.x;mz-=f.z}
 if(keys['a']||keys['A']){mx-=r.x;mz-=r.z}
 if(keys['d']||keys['D']){mx+=r.x;mz+=r.z}
 mx+=f.x*mu;mz+=f.z*mu;mx-=f.x*md;mz-=f.z*md;mx-=r.x*ml;mz-=r.z*ml;mx+=r.x*mr;mz+=r.z*mr;
+
+const sway=getGodSway();
+if(sway!==0){
+    mx += r.x * sway;
+    mz += r.z * sway;
+}
+
 const len=Math.sqrt(mx*mx+mz*mz);if(len>1){mx/=len;mz/=len}
 C.position.x+=mx*moveSpeed;C.position.z+=mz*moveSpeed;
 vy+=gravity;C.position.y+=vy;
 onGround=!1;const p=check(C.position);
-if(p){C.position.y=1;vy=0;onGround=!0;if(!p.scored){p.scored=!0;score++;p.m.material.color.setHex(0x006600)}if(p.st){const dist=new THREE.Vector3(C.position.x,.25,C.position.z).distanceTo(p.st.position);if(dist<1.0){S.remove(p.st);p.st=null;score+=2}}}
+if(p){
+    C.position.y=1;vy=0;onGround=!0;
+    if(!p.scored){
+        p.scored=!0;score++;p.m.material.color.setHex(0x006600);
+        if(Math.random()<0.5){
+            triggerGodWind();
+        }
+    }
+    if(p.st){const dist=new THREE.Vector3(C.position.x,.25,C.position.z).distanceTo(p.st.position);if(dist<1.0){S.remove(p.st);p.st=null;score+=2}}
+}
 if(C.position.y<-2){gameOver=!0;msg.style.display='block';msg.innerHTML='你踩到蛆了<span>点击重玩</span>'}
 if(C.position.x>(COUNT-1)*GAP+1.5){
     let vv = "你没病";
