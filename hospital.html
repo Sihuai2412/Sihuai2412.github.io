@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>跳跃闯关</title>
+<style>
+body{margin:0;overflow:hidden;touch-action:none}
+#btn-container{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:20;display:grid;grid-template-columns:70px 70px 70px;grid-template-rows:70px 70px;gap:6px;background:rgba(0,0,0,0.3);padding:12px;border-radius:20px;backdrop-filter:blur(4px);transition:opacity .3s;pointer-events:none}
+#btn-container button{pointer-events:auto;border:none;border-radius:14px;font-size:22px;background:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(2px);box-shadow:0 2px 8px rgba(0,0,0,0.2);touch-action:manipulation;user-select:none;cursor:pointer;transition:.08s}
+#btn-container button:active{transform:scale(.92);background:rgba(255,255,255,0.35)}
+.jump{background:rgba(255,200,50,0.25);font-size:28px;grid-column:1;grid-row:1}
+.up{grid-column:2;grid-row:1}
+.left{grid-column:1;grid-row:2}
+.down{grid-column:2;grid-row:2}
+.right{grid-column:3;grid-row:2}
+#hud{position:fixed;top:20px;left:20px;color:#222;font:24px Arial;z-index:10;pointer-events:none}
+#msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#222;font:32px Arial;display:none;z-index:30;background:rgba(255,255,255,0.9);padding:20px 40px;border-radius:10px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.2);cursor:pointer;pointer-events:auto}
+#msg span{font-size:20px;display:block;margin-top:8px}
+</style>
+</head>
+<body>
+<div id=hud>报告单：0</div>
+<div id=msg>🎉 通关了！<span>点击重玩</span></div>
+<div id=btn-container>
+<button class=jump id=jumpBtn>★</button>
+<button class=up id=upBtn>▲</button>
+<button class=left id=leftBtn>◀</button>
+<button class=down id=downBtn>▼</button>
+<button class=right id=rightBtn>▶</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const S=new THREE.Scene();
+S.background=new THREE.Color(0xeeeeee);
+const G=new THREE.GridHelper(200,200,0x888888,0x444444);
+G.position.y=-0.01;S.add(G);
+const R=new THREE.Mesh(new THREE.RingGeometry(25,28,64),new THREE.MeshBasicMaterial({color:0xcccccc,side:THREE.DoubleSide,transparent:!0,opacity:.15}));
+R.rotation.x=-Math.PI/2;R.position.y=-0.2;S.add(R);
+const C=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,1000);
+C.position.set(0,1,0);
+const E=new THREE.WebGLRenderer();
+E.setSize(innerWidth,innerHeight);document.body.appendChild(E.domElement);
+const L=new THREE.DirectionalLight(16777215,.8);L.position.set(10,20,10);S.add(L);S.add(new THREE.AmbientLight(0x446688));
+
+// 随机游动绿色小生物
+const B=[];
+for(let i=0;i<50;i++){
+const s=.12+Math.random()*.18;
+const m=new THREE.Mesh(new THREE.BoxGeometry(s*.4,s*.4,s*3),new THREE.MeshStandardMaterial({color:0x44cc66,emissive:0x226633,emissiveIntensity:.2}));
+m.position.set(-20+Math.random()*55,.1,-15+Math.random()*30);
+S.add(m);
+B.push({m,vx:(Math.random()-.5)*.025,vz:(Math.random()-.5)*.025});
+}
+
+const P=[];let score=0,gameOver=!1,win=!1;
+const PW=2,PD=2,GAP=PW*2.5,COUNT=20;
+function addPlatform(x,z,hasStar=!0){
+const m=new THREE.Mesh(new THREE.BoxGeometry(PW,.3,PD),new THREE.MeshStandardMaterial({color:0x666600}));
+m.position.set(x,0,z);S.add(m);
+let st=null;
+if(hasStar){
+// 白色扁方块 - 报告单
+st=new THREE.Mesh(new THREE.BoxGeometry(.5,.05,.7),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xcccccc,emissiveIntensity:.3}));
+st.position.set(x+(Math.random()-.5)*PW*.6,.25,z+(Math.random()-.5)*PD*.6);
+st.rotation.y=Math.random()*Math.PI;
+S.add(st);
+}
+P.push({m,st,x,z,w:PW,d:PD,scored:!1});
+}
+function build(){P.forEach(p=>{S.remove(p.m);if(p.st)S.remove(p.st)});P.length=0;addPlatform(0,0,!1);for(let i=1;i<COUNT;i++)addPlatform(i*GAP,(Math.random()-.5)*3)}build();
+
+let vy=0,onGround=!1;
+const gravity=-.005,jumpSpeed=.12,moveSpeed=.08;
+const keys={};
+const btn=document.getElementById('btn-container');
+let btnHidden=!1;
+
+document.addEventListener('keydown',e=>{
+keys[e.key]=!0;
+if(e.key===' '){e.preventDefault();if(onGround){vy=jumpSpeed;onGround=!1}}
+if(!btnHidden){btn.style.opacity='0';btnHidden=!0}
+});
+document.addEventListener('keyup',e=>{keys[e.key]=!1});
+
+document.addEventListener('touchstart',()=>{if(btnHidden){btn.style.opacity='1';btnHidden=!1}},{passive:!0});
+document.addEventListener('mousedown',()=>{if(btnHidden){btn.style.opacity='1';btnHidden=!1}});
+
+let mu=0,md=0,ml=0,mr=0;
+function setup(id,onS,onE){const el=document.getElementById(id);if(!el)return;const st=e=>{e.preventDefault();if(!gameOver&&!win)onS()};const ed=e=>{e.preventDefault();if(onE)onE()};el.addEventListener('touchstart',st,{passive:!1});el.addEventListener('touchend',ed,{passive:!1});el.addEventListener('touchcancel',ed,{passive:!1});el.addEventListener('mousedown',st);el.addEventListener('mouseup',ed);el.addEventListener('mouseleave',ed)}
+setup('upBtn',()=>{mu=1},()=>{mu=0});setup('downBtn',()=>{md=1},()=>{md=0});setup('leftBtn',()=>{ml=1},()=>{ml=0});setup('rightBtn',()=>{mr=1},()=>{mr=0});setup('jumpBtn',()=>{if(onGround){vy=jumpSpeed;onGround=!1}});
+
+E.domElement.addEventListener('click',()=>{if(!gameOver&&!win)E.domElement.requestPointerLock()});
+document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement===E.domElement)document.addEventListener('mousemove',onMouse);else document.removeEventListener('mousemove',onMouse)});
+let yaw=0,pitch=0;
+function onMouse(e){yaw-=e.movementX*.002;pitch-=e.movementY*.002;pitch=Math.max(-1.2,Math.min(1.2,pitch))}
+
+const hud=document.getElementById('hud'),msg=document.getElementById('msg');
+function reset(){if(document.pointerLockElement)document.exitPointerLock();gameOver=!1;win=!1;P.forEach(p=>{S.remove(p.m);if(p.st)S.remove(p.st)});P.length=0;build();C.position.set(0,1,0);vy=0;onGround=!1;score=0;msg.style.display='none';mu=md=ml=mr=0;btn.style.opacity='1';btnHidden=!1}
+msg.addEventListener('click',reset);E.domElement.addEventListener('click',()=>{if(gameOver||win)reset()});
+
+function check(pos){const fy=pos.y-1;if(fy>.1)return null;for(const p of P){const dx=pos.x-p.x,dz=pos.z-p.z;if(Math.abs(dx)<p.w/2&&Math.abs(dz)<p.d/2){if(fy<=0&&vy<=0)return p}}return null}
+
+function loop(){
+for(const b of B){b.m.position.x+=b.vx;b.m.position.z+=b.vz;if(b.m.position.x<-20||b.m.position.x>35)b.vx*=-1;if(b.m.position.z<-15||b.m.position.z>15)b.vz*=-1;b.m.rotation.y+=.02}
+if(!gameOver&&!win){
+const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+const r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+let mx=0,mz=0;
+if(keys['w']||keys['W']){mx+=f.x;mz+=f.z}
+if(keys['s']||keys['S']){mx-=f.x;mz-=f.z}
+if(keys['a']||keys['A']){mx-=r.x;mz-=r.z}
+if(keys['d']||keys['D']){mx+=r.x;mz+=r.z}
+mx+=f.x*mu;mz+=f.z*mu;mx-=f.x*md;mz-=f.z*md;mx-=r.x*ml;mz-=r.z*ml;mx+=r.x*mr;mz+=r.z*mr;
+const len=Math.sqrt(mx*mx+mz*mz);if(len>1){mx/=len;mz/=len}
+C.position.x+=mx*moveSpeed;C.position.z+=mz*moveSpeed;
+vy+=gravity;C.position.y+=vy;
+onGround=!1;const p=check(C.position);
+if(p){C.position.y=1;vy=0;onGround=!0;if(!p.scored){p.scored=!0;score++;p.m.material.color.setHex(0x006600)}if(p.st){const dist=new THREE.Vector3(C.position.x,.25,C.position.z).distanceTo(p.st.position);if(dist<1.0){S.remove(p.st);p.st=null;score+=2}}}
+if(C.position.y<-2){gameOver=!0;msg.style.display='block';msg.innerHTML='你踩到蛆了<span>点击重玩</span>'}
+if(C.position.x>(COUNT-1)*GAP+1.5){
+    let vv = "你没病";
+if(Math.random()<=.5){
+    vv = "你有病！"
+    if(Math.random()<=.2){
+        vv = "你有大病！"
+    }
+}
+    win=!0;msg.style.display='block';msg.innerHTML='你拿到了所有诊断单！<span>诊断结果：'+vv+'</span>'}
+const euler=new THREE.Euler(pitch,yaw,0,'YXZ');C.quaternion.setFromEuler(euler)
+}
+hud.textContent='报告单：'+score;E.render(S,C);requestAnimationFrame(loop)}
+loop();
+window.addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();E.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
